@@ -1,10 +1,8 @@
 import serial
 import time
 
-ser = serial.Serial('COM6', 115200, timeout=1)
-time.sleep(2)
+ser = None
 
-# Disease → MED command mapping (12 servos)
 disease_to_command = {
     "Flu": "MED1",
     "Viral Infection": "MED2",
@@ -20,10 +18,40 @@ disease_to_command = {
     "Skin Infection": "MED12"
 }
 
+# -------------------------------
+# INIT SERIAL ONLY WHEN CALLED
+# -------------------------------
+def init_serial(port='COM6', baud=115200):
+    global ser
+    if ser is None:
+        try:
+            ser = serial.Serial(port, baud, timeout=1)
+            time.sleep(2)
+            print("Serial connected")
+        except Exception as e:
+            print(f"Serial init failed: {e}")
+            ser = None
+
+# -------------------------------
+# DISPENSE FUNCTION
+# -------------------------------
 def dispense_medicine(disease_name):
-    if disease_name in disease_to_command:
-        command = disease_to_command[disease_name]
-        ser.write((command + '\n').encode())
-        print(f"Sent: {command}")
+    global ser
+
+    if disease_name not in disease_to_command:
+        print("No mapping for disease")
+        return
+
+    command = disease_to_command[disease_name]
+
+    if ser is None:
+        init_serial()
+
+    if ser:
+        try:
+            ser.write((command + "\n").encode())
+            print(f"Sent: {command}")
+        except Exception as e:
+            print(f"Serial write failed: {e}")
     else:
-        print("Disease not mapped to servo")
+        print(f"[SIMULATION] {command}")

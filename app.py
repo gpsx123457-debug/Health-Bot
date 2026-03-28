@@ -2,12 +2,18 @@ import streamlit as st
 from model import predict
 from database import init_db, insert_record
 import datetime
+
+# -------------------------------
+# HARDWARE IMPORT SAFE MODE
+# -------------------------------
 try:
     from hardware import dispense_medicine
     HARDWARE_AVAILABLE = True
 except:
-    HARDWARE_AVAILABLE = False 
+    HARDWARE_AVAILABLE = False
+
 HARDWARE_ENABLED = HARDWARE_AVAILABLE
+
 init_db()
 
 # -------------------------------
@@ -42,7 +48,7 @@ def restart():
     st.session_state.dispensed = False
 
 # -------------------------------
-# FULL LANGUAGE DICTIONARY
+# TRANSLATION SYSTEM
 # -------------------------------
 TEXT = {
     "English": {
@@ -83,9 +89,9 @@ TEXT = {
         "dob": "जन्म तिथि",
         "symptoms": "लक्षण चुनें",
         "severity": "गंभीरता",
-        "duration": "अवधि (दिनों में)",
-        "result": "निदान परिणाम",
-        "confidence": "विश्वास स्तर",
+        "duration": "अवधि (दिन)",
+        "result": "निदान",
+        "confidence": "विश्वास",
         "meds": "दवा योजना",
         "medicine": "दवा",
         "dose": "खुराक",
@@ -97,16 +103,16 @@ TEXT = {
         "payment": "भुगतान",
         "amount": "राशि",
         "pay_done": "भुगतान पूर्ण",
-        "success": "दवा सफलतापूर्वक वितरित",
-        "thanks": "सेवा का उपयोग करने के लिए धन्यवाद",
-        "restart": "फिर से शुरू करें"
+        "success": "दवा सफलतापूर्वक दी गई",
+        "thanks": "सेवा उपयोग करने के लिए धन्यवाद",
+        "restart": "पुनः प्रारंभ"
     }
 }
 
 T = TEXT[st.session_state.lang]
 
 # -------------------------------
-# SYMPTOMS
+# SYMPTOMS (BASE)
 # -------------------------------
 symptoms = [
     "Fever","Cough","Headache","Fatigue","Nausea","Vomiting",
@@ -116,23 +122,55 @@ symptoms = [
     "Bleeding","Swelling"
 ]
 
+SYMPTOMS_T = {
+    "English": {s: s for s in symptoms},
+    "Hindi": {
+        "Fever":"बुखार","Cough":"खांसी","Headache":"सिरदर्द","Fatigue":"थकान",
+        "Nausea":"मतली","Vomiting":"उल्टी","Diarrhea":"दस्त","BodyPain":"शरीर दर्द",
+        "SoreThroat":"गले में दर्द","RunnyNose":"नाक बहना","ChestPain":"छाती दर्द",
+        "Breathlessness":"सांस की तकलीफ","Acidity":"अम्लता","AbdominalPain":"पेट दर्द",
+        "Dizziness":"चक्कर","Allergy":"एलर्जी","Rash":"दाने","Chills":"ठंड लगना",
+        "Sweating":"पसीना","BurnInjury":"जलन","Bleeding":"खून","Swelling":"सूजन"
+    }
+}
+
+# -------------------------------
+# DISEASE TRANSLATION
+# -------------------------------
+DISEASE_T = {
+    "English": {},
+    "Hindi": {}
+}
+
 # -------------------------------
 # MEDICATION DATABASE
 # -------------------------------
 medications = {
-    "Flu": {"name": "Paracetamol", "dose": "500mg", "freq": 3, "timing": "After food", "type": "tablet", "price": 5},
-    "Common Cold": {"name": "Cetirizine", "dose": "10mg", "freq": 1, "timing": "Night after food", "type": "tablet", "price": 8},
-    "Allergy": {"name": "Cetirizine", "dose": "10mg", "freq": 1, "timing": "Night after food", "type": "tablet", "price": 8},
-    "Gastritis": {"name": "Antacid", "dose": "1 tablet", "freq": 2, "timing": "Before food", "type": "tablet", "price": 6},
-    "Food Poisoning": {"name": "ORS", "dose": "1 sachet", "freq": 2, "timing": "After meals", "type": "external", "price": 10},
-    "Migraine": {"name": "Ibuprofen", "dose": "400mg", "freq": 2, "timing": "After food", "type": "tablet", "price": 7},
-    "Asthma": {"name": "Salbutamol", "dose": "2 puffs", "freq": 2, "timing": "Morning & Night", "type": "inhaler", "price": 150},
-    "Cuts Bruises": {"name": "Antiseptic Cream", "dose": "Apply", "freq": 2, "timing": "Morning & Night", "type": "cream", "price": 40},
-    "Burns Mild": {"name": "Burn Cream", "dose": "Apply", "freq": 2, "timing": "Morning & Night", "type": "cream", "price": 50},
-    "Burns Severe": {"name": "Silver Cream", "dose": "Apply", "freq": 2, "timing": "Morning & Night", "type": "cream", "price": 120},
-    "Skin Infection": {"name": "Clotrimazole", "dose": "Apply", "freq": 2, "timing": "Morning & Night", "type": "cream", "price": 60},
-    "Viral Infection": {"name": "Paracetamol", "dose": "500mg", "freq": 3, "timing": "After food", "type": "tablet", "price": 5}
+    "Flu": {"name":"Paracetamol","dose":"500mg","freq":3,"timing":"After food","type":"tablet","price":5},
+    "Common Cold": {"name":"Cetirizine","dose":"10mg","freq":1,"timing":"Night","type":"tablet","price":8},
+    "Allergy": {"name":"Cetirizine","dose":"10mg","freq":1,"timing":"Night","type":"tablet","price":8},
+    "Gastritis": {"name":"Antacid","dose":"1 tab","freq":2,"timing":"Before food","type":"tablet","price":6},
+    "Food Poisoning": {"name":"ORS","dose":"1 sachet","freq":2,"timing":"After meals","type":"external","price":10},
+    "Migraine": {"name":"Ibuprofen","dose":"400mg","freq":2,"timing":"After food","type":"tablet","price":7},
+    "Asthma": {"name":"Salbutamol","dose":"2 puffs","freq":2,"timing":"Morning & Night","type":"inhaler","price":150},
+    "Cuts Bruises": {"name":"Antiseptic","dose":"Apply","freq":2,"timing":"Morning & Night","type":"cream","price":40},
+    "Burns Mild": {"name":"Burn Cream","dose":"Apply","freq":2,"timing":"Morning & Night","type":"cream","price":50},
+    "Burns Severe": {"name":"Silver Cream","dose":"Apply","freq":2,"timing":"Morning & Night","type":"cream","price":120},
+    "Skin Infection": {"name":"Clotrimazole","dose":"Apply","freq":2,"timing":"Morning & Night","type":"cream","price":60},
+    "Viral Infection": {"name":"Paracetamol","dose":"500mg","freq":3,"timing":"After food","type":"tablet","price":5}
 }
+
+# -------------------------------
+# SERVO MAPPING (1-12)
+# -------------------------------
+SERVO_MAP = {
+    "Flu":1,"Common Cold":2,"Allergy":3,"Gastritis":4,
+    "Food Poisoning":5,"Migraine":6,"Asthma":7,"Cuts Bruises":8,
+    "Burns Mild":9,"Burns Severe":10,"Skin Infection":11,"Viral Infection":12
+}
+
+def get_servo_id(disease):
+    return SERVO_MAP.get(disease, 0)  # 0 = phantom
 
 # -------------------------------
 # PAGE FLOW
@@ -141,59 +179,47 @@ medications = {
 # PAGE 1
 if st.session_state.page == 0:
     st.title(T["language"])
-    st.session_state.lang = st.selectbox(T["select"], ["English", "Hindi"])
+    st.session_state.lang = st.selectbox(T["select"], ["English","Hindi"])
     st.button(T["next"], on_click=next_page)
 
-# PAGE 2 — USER DETAILS (AUTO AGE FROM DOB)
+# PAGE 2
 elif st.session_state.page == 1:
     st.title(T["details"])
 
-    # Name input
     st.session_state.data["name"] = st.text_input(T["name"])
 
-    # DOB input (valid range)
     today = datetime.date.today()
-    dob = st.date_input(
-        T["dob"],
-        min_value=datetime.date(1900, 1, 1),
-        max_value=today
-    )
+    dob = st.date_input(T["dob"], min_value=datetime.date(1900,1,1), max_value=today)
 
-    st.session_state.data["dob"] = dob
-
-    # ✅ Age Calculation
     if dob:
-        age = today.year - dob.year - (
-            (today.month, today.day) < (dob.month, dob.day)
-        )
+        age = today.year - dob.year - ((today.month,today.day) < (dob.month,dob.day))
         st.session_state.data["age"] = age
-
-        # Display calculated age (read-only)
         st.write(f"{T['age']}: {age}")
 
-    # Next button
+    st.session_state.data["dob"] = dob
     st.button(T["next"], on_click=next_page)
 
-# PAGE 3
+# PAGE 3 (SCROLL FIXED)
 elif st.session_state.page == 2:
     st.title(T["symptoms"])
 
-    col1, col2 = st.columns(2)
-    data = {}
+    with st.container():
+        st.markdown("<div style='height:350px; overflow-y:auto; padding:10px; border:1px solid #ddd'>", unsafe_allow_html=True)
 
-    for i, sym in enumerate(symptoms):
-        if i % 2 == 0:
-            data[sym] = 1 if col1.checkbox(sym) else 0
-        else:
-            data[sym] = 1 if col2.checkbox(sym) else 0
+        data = {}
+        for sym in symptoms:
+            label = SYMPTOMS_T[st.session_state.lang][sym]
+            data[sym] = st.checkbox(label)
+
+        st.markdown("</div>", unsafe_allow_html=True)
 
     st.session_state.data["symptoms"] = data
-
     st.button(T["next"], on_click=next_page)
+
 # PAGE 4
 elif st.session_state.page == 3:
     severity = st.selectbox(T["severity"], ["Low","Moderate","High"])
-    duration = st.number_input(T["duration"], 1, 30, 1)
+    duration = st.number_input(T["duration"],1,30,1)
 
     st.session_state.data.update({
         "Condition": ["Low","Moderate","High"].index(severity),
@@ -230,15 +256,14 @@ elif st.session_state.page == 5:
     st.write(f"{T['timing']}: {med['timing']}")
     st.write(f"{T['type']}: {med['type']}")
 
-    days = st.number_input(T["days"], 1, 5, 1)
+    days = st.number_input(T["days"],1,5,1)
 
     units = med["freq"] * days
-    cost = round(units * med["price"] * 1.10, 2)
+    cost = round(units * med["price"] * 1.10,2)
 
-    st.session_state.billing = {"units": units, "cost": cost}
+    st.session_state.billing = {"units":units,"cost":cost}
 
     st.write(f"{T['total']}: ₹{cost}")
-
     st.button(T["proceed"], on_click=next_page)
 
 # PAGE 7 (PAYMENT + DISPENSE)
@@ -250,28 +275,25 @@ elif st.session_state.page == 6:
 
     if st.button(T["pay_done"]):
         if not st.session_state.dispensed:
-            result = st.session_state.result
-            med = medications[result["prediction"]]
 
-            # -------------------------------
-            # 🔥 DISPENSE HERE (SAFE SWITCH)
-            # -------------------------------
-            if HARDWARE_ENABLED:
-                dispense_medicine(result["prediction"])
+            result = st.session_state.result
+            servo_id = get_servo_id(result["prediction"])
+
+            if HARDWARE_ENABLED and servo_id != 0:
+                dispense_medicine(servo_id)
             else:
-                st.warning("Hardware disabled — simulation mode only")
-                print(f"[SIMULATION] Dispense: {result['prediction']}")
+                st.warning("Simulation / Phantom mode")
 
             insert_record({
-                "name": st.session_state.data.get("name", ""),
-                "age": st.session_state.data.get("age", 0),
-                "dob": st.session_state.data.get("dob", ""),
-                "symptoms": st.session_state.data.get("symptoms", {}),
-                "disease": result["prediction"],
-                "confidence": result["confidence"],
-                "medicine": med["name"],
-                "units": bill["units"],
-                "cost": bill["cost"]
+                "name":st.session_state.data.get("name",""),
+                "age":st.session_state.data.get("age",0),
+                "dob":str(st.session_state.data.get("dob","")),
+                "symptoms":st.session_state.data.get("symptoms",{}),
+                "disease":result["prediction"],
+                "confidence":result["confidence"],
+                "medicine":medications[result["prediction"]]["name"],
+                "units":bill["units"],
+                "cost":bill["cost"]
             })
 
             st.session_state.dispensed = True
@@ -279,8 +301,6 @@ elif st.session_state.page == 6:
 
 # PAGE 8
 elif st.session_state.page == 7:
-    if st.session_state.dispensed:
-        st.success(T["success"])
-
+    st.success(T["success"])
     st.write(T["thanks"])
     st.button(T["restart"], on_click=restart)
