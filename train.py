@@ -113,7 +113,7 @@ def train_model(df):
 
     # ✅ Optimized model (NO crash)
     rf = RandomForestClassifier(
-        n_estimators=200,
+        n_estimators=150,
         max_depth=15,
         min_samples_split=5,
         random_state=42,
