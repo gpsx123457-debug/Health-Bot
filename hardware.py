@@ -3,6 +3,9 @@ import time
 
 ser = None
 
+# -------------------------------
+# DISEASE → COMMAND MAP (15)
+# -------------------------------
 disease_to_command = {
     "Flu": "MED1",
     "Viral Infection": "MED2",
@@ -15,11 +18,16 @@ disease_to_command = {
     "Cuts Bruises": "MED9",
     "Burns Mild": "MED10",
     "Burns Severe": "MED11",
-    "Skin Infection": "MED12"
+    "Skin Infection": "MED12",
+
+    # 👻 PHANTOM (NO REAL MOTOR)
+    "Typhoid": "MED13",
+    "Dengue": "MED14",
+    "Pneumonia": "MED15"
 }
 
 # -------------------------------
-# INIT SERIAL ONLY WHEN CALLED
+# INIT SERIAL (KEEP SAME STYLE)
 # -------------------------------
 def init_serial(port='COM6', baud=115200):
     global ser
@@ -44,13 +52,24 @@ def dispense_medicine(disease_name):
 
     command = disease_to_command[disease_name]
 
+    # Initialize serial if needed
     if ser is None:
         init_serial()
 
+    # -------------------------------
+    # SEND COMMAND (AUGER SYSTEM)
+    # -------------------------------
     if ser:
         try:
             ser.write((command + "\n").encode())
             print(f"Sent: {command}")
+
+            # Optional: read response from ESP32
+            time.sleep(0.2)
+            while ser.in_waiting:
+                response = ser.readline().decode().strip()
+                print(f"ESP: {response}")
+
         except Exception as e:
             print(f"Serial write failed: {e}")
     else:

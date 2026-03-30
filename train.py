@@ -1,7 +1,6 @@
 import pandas as pd
 import random
-import pickle
-import os
+import joblib
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.calibration import CalibratedClassifierCV
@@ -23,7 +22,7 @@ columns = symptoms + ["Duration", "AgeGroup", "Condition", "Disease"]
 
 
 # -----------------------------
-# DISEASE DEFINITIONS (15)
+# DISEASE DEFINITIONS
 # -----------------------------
 diseases = {
     "Flu": ["Fever","Cough","Headache","Fatigue","Chills","Sweating","BodyPain"],
@@ -45,7 +44,7 @@ diseases = {
 
 
 # -----------------------------
-# DATASET GENERATION (STABLE)
+# DATASET GENERATION
 # -----------------------------
 def generate_dataset(samples_per_disease=800):
     rows = []
@@ -61,27 +60,9 @@ def generate_dataset(samples_per_disease=800):
                     val = 1 if random.random() < 0.05 else 0
                 row.append(val)
 
-            # Duration (0,1,2)
-            if disease in ["Flu","Common Cold","Food Poisoning"]:
-                duration = random.choices([0,1,2], weights=[0.6,0.3,0.1])[0]
-            elif disease in ["Typhoid","Dengue","Pneumonia"]:
-                duration = random.choices([0,1,2], weights=[0.1,0.4,0.5])[0]
-            else:
-                duration = random.randint(0,2)
-
-            # AgeGroup (0,1,2)
-            if disease in ["Flu","Common Cold","Allergy"]:
-                age = random.choices([0,1,2], weights=[0.3,0.6,0.1])[0]
-            elif disease in ["Pneumonia","Typhoid"]:
-                age = random.choices([0,1,2], weights=[0.1,0.5,0.4])[0]
-            else:
-                age = random.randint(0,2)
-
-            # Condition (severity)
-            if disease in ["Burns Severe","Dengue","Pneumonia"]:
-                condition = random.choices([0,1,2], weights=[0.1,0.3,0.6])[0]
-            else:
-                condition = random.choices([0,1,2], weights=[0.5,0.3,0.2])[0]
+            duration = random.randint(0, 2)
+            age = random.randint(0, 2)
+            condition = random.randint(0, 2)
 
             row += [duration, age, condition, disease]
             rows.append(row)
@@ -89,16 +70,11 @@ def generate_dataset(samples_per_disease=800):
     df = pd.DataFrame(rows, columns=columns)
     df = df.sample(frac=1).reset_index(drop=True)
 
-    df.to_csv("dataset.csv", index=False)
-
-    print("Dataset generated:", df.shape)
-    print("\nSamples per disease:\n", df["Disease"].value_counts())
-
     return df
 
 
 # -----------------------------
-# TRAIN MODEL (OPTIMIZED)
+# TRAIN MODEL
 # -----------------------------
 def train_model(df):
     X = df.drop("Disease", axis=1)
@@ -111,7 +87,6 @@ def train_model(df):
         stratify=y
     )
 
-    # ✅ Optimized model (NO crash)
     rf = RandomForestClassifier(
         n_estimators=150,
         max_depth=15,
@@ -128,38 +103,28 @@ def train_model(df):
 
     model.fit(X_train, y_train)
 
-    # Evaluation
     y_pred = model.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
 
-    print(f"\nModel Accuracy: {round(accuracy*100, 2)}%")
+    print(f"\nAccuracy: {round(accuracy * 100, 2)}%")
 
     return model, X.columns
 
 
 # -----------------------------
-# SAVE MODEL SAFELY
+# SAVE MODEL
 # -----------------------------
 def save_model(model, features):
-    temp_model = "model_temp.pkl"
-    temp_feat = "features_temp.pkl"
+    joblib.dump(model, "model.pkl", compress=3)
+    joblib.dump(list(features), "features.pkl")
 
-    with open(temp_model, "wb") as f:
-        pickle.dump(model, f)
-
-    with open(temp_feat, "wb") as f:
-        pickle.dump(list(features), f)
-
-    os.replace(temp_model, "model.pkl")
-    os.replace(temp_feat, "features.pkl")
-
-    print("Model and features saved successfully.")
+    print("✅ model.pkl and features.pkl saved")
 
 
 # -----------------------------
-# MAIN PIPELINE
+# MAIN
 # -----------------------------
 if __name__ == "__main__":
-    df = generate_dataset(samples_per_disease=800)  # ~12,000 rows
+    df = generate_dataset()
     model, features = train_model(df)
     save_model(model, features)

@@ -1,50 +1,17 @@
 import pandas as pd
 import numpy as np
-import os
 import joblib
-import gdown
 
 # -------------------------------
-# FILE PATHS
-# -------------------------------
-MODEL_PATH = "model.pkl"
-FEATURES_PATH = "features.pkl"
-
-# 🔴 PUT YOUR GOOGLE DRIVE FILE IDs HERE
-MODEL_FILE_ID = "1YmORJRpUVEkmI9NIWpTzjwBkNKhNH8ar"
-FEATURES_FILE_ID = "1ILfTrXLn2dVQ4gq_nMSPwI69JiQ29ZMc"
-
-
-# -------------------------------
-# DOWNLOAD FILE (SAFE)
-# -------------------------------
-def download_file(file_id, output):
-    if not os.path.exists(output):
-        try:
-            url = f"https://drive.google.com/uc?id={file_id}"
-            print(f"Downloading {output}...")
-            gdown.download(url, output, quiet=False)
-        except Exception as e:
-            print(f"Download failed: {e}")
-
-
-# -------------------------------
-# LOAD MODEL + FEATURES
+# LOAD MODEL + FEATURES (LOCAL)
 # -------------------------------
 def load_model():
-    download_file(MODEL_FILE_ID, MODEL_PATH)
-    download_file(FEATURES_FILE_ID, FEATURES_PATH)
-
-    if not os.path.exists(MODEL_PATH):
-        raise FileNotFoundError("model.pkl missing")
-
-    if not os.path.exists(FEATURES_PATH):
-        raise FileNotFoundError("features.pkl missing")
-
-    model = joblib.load(MODEL_PATH)
-    features = joblib.load(FEATURES_PATH)
-
-    return model, features
+    try:
+        model = joblib.load("model.pkl")
+        features = joblib.load("features.pkl")
+        return model, features
+    except Exception as e:
+        raise RuntimeError(f"Model loading failed: {e}")
 
 
 # -------------------------------
@@ -74,9 +41,8 @@ def predict(user_input_dict):
 
     user_input = preprocess_input(user_input_dict)
 
-    # Ensure all features exist
+    # Ensure feature alignment
     input_data = [user_input.get(f, 0) for f in features]
-
     input_df = pd.DataFrame([input_data], columns=features)
 
     prediction = model.predict(input_df)[0]
@@ -91,7 +57,6 @@ def predict(user_input_dict):
         for i in top3_idx
     ]
 
-    # Reliability
     reliability = (
         "High" if confidence >= 80 else
         "Moderate" if confidence >= 60 else

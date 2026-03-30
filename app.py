@@ -112,7 +112,7 @@ TEXT = {
 T = TEXT[st.session_state.lang]
 
 # -------------------------------
-# SYMPTOMS (BASE)
+# SYMPTOMS
 # -------------------------------
 symptoms = [
     "Fever","Cough","Headache","Fatigue","Nausea","Vomiting",
@@ -135,15 +135,7 @@ SYMPTOMS_T = {
 }
 
 # -------------------------------
-# DISEASE TRANSLATION
-# -------------------------------
-DISEASE_T = {
-    "English": {},
-    "Hindi": {}
-}
-
-# -------------------------------
-# MEDICATION DATABASE
+# MEDICATION DATABASE (UPDATED)
 # -------------------------------
 medications = {
     "Flu": {"name":"Paracetamol","dose":"500mg","freq":3,"timing":"After food","type":"tablet","price":5},
@@ -157,35 +149,25 @@ medications = {
     "Burns Mild": {"name":"Burn Cream","dose":"Apply","freq":2,"timing":"Morning & Night","type":"cream","price":50},
     "Burns Severe": {"name":"Silver Cream","dose":"Apply","freq":2,"timing":"Morning & Night","type":"cream","price":120},
     "Skin Infection": {"name":"Clotrimazole","dose":"Apply","freq":2,"timing":"Morning & Night","type":"cream","price":60},
-    "Viral Infection": {"name":"Paracetamol","dose":"500mg","freq":3,"timing":"After food","type":"tablet","price":5}
-}
+    "Viral Infection": {"name":"Paracetamol","dose":"500mg","freq":3,"timing":"After food","type":"tablet","price":5},
 
-# -------------------------------
-# SERVO MAPPING (1-12)
-# -------------------------------
-SERVO_MAP = {
-    "Flu":1,"Common Cold":2,"Allergy":3,"Gastritis":4,
-    "Food Poisoning":5,"Migraine":6,"Asthma":7,"Cuts Bruises":8,
-    "Burns Mild":9,"Burns Severe":10,"Skin Infection":11,"Viral Infection":12
+    # 👻 PHANTOM
+    "Typhoid": {"name":"Doctor Consultation Required","dose":"-","freq":0,"timing":"-","type":"external","price":0},
+    "Dengue": {"name":"Doctor Consultation Required","dose":"-","freq":0,"timing":"-","type":"external","price":0},
+    "Pneumonia": {"name":"Doctor Consultation Required","dose":"-","freq":0,"timing":"-","type":"external","price":0}
 }
-
-def get_servo_id(disease):
-    return SERVO_MAP.get(disease, 0)  # 0 = phantom
 
 # -------------------------------
 # PAGE FLOW
 # -------------------------------
 
-# PAGE 1
 if st.session_state.page == 0:
     st.title(T["language"])
     st.session_state.lang = st.selectbox(T["select"], ["English","Hindi"])
     st.button(T["next"], on_click=next_page)
 
-# PAGE 2
 elif st.session_state.page == 1:
     st.title(T["details"])
-
     st.session_state.data["name"] = st.text_input(T["name"])
 
     today = datetime.date.today()
@@ -199,24 +181,16 @@ elif st.session_state.page == 1:
     st.session_state.data["dob"] = dob
     st.button(T["next"], on_click=next_page)
 
-# PAGE 3 (SCROLL FIXED)
 elif st.session_state.page == 2:
     st.title(T["symptoms"])
 
-    with st.container():
-        st.markdown("<div style='height:350px; overflow-y:auto; padding:10px; border:1px solid #ddd'>", unsafe_allow_html=True)
-
-        data = {}
-        for sym in symptoms:
-            label = SYMPTOMS_T[st.session_state.lang][sym]
-            data[sym] = st.checkbox(label)
-
-        st.markdown("</div>", unsafe_allow_html=True)
+    data = {}
+    for sym in symptoms:
+        data[sym] = st.checkbox(SYMPTOMS_T[st.session_state.lang][sym])
 
     st.session_state.data["symptoms"] = data
     st.button(T["next"], on_click=next_page)
 
-# PAGE 4
 elif st.session_state.page == 3:
     severity = st.selectbox(T["severity"], ["Low","Moderate","High"])
     duration = st.number_input(T["duration"],1,30,1)
@@ -229,13 +203,12 @@ elif st.session_state.page == 3:
 
     st.button(T["next"], on_click=next_page)
 
-# PAGE 5
 elif st.session_state.page == 4:
     user_input = {}
     user_input.update(st.session_state.data["symptoms"])
     user_input.update({
         "Duration": st.session_state.data["Duration"],
-        "AgeGroup": st.session_state.data["AgeGroup"],
+        "AgeGroup": 1,
         "Condition": st.session_state.data["Condition"]
     })
 
@@ -247,51 +220,52 @@ elif st.session_state.page == 4:
 
     st.button(T["next"], on_click=next_page)
 
-# PAGE 6
 elif st.session_state.page == 5:
-    med = medications[st.session_state.result["prediction"]]
+    disease = st.session_state.result["prediction"]
+    med = medications[disease]
 
-    st.write(f"{T['medicine']}: {med['name']}")
-    st.write(f"{T['dose']}: {med['dose']}")
-    st.write(f"{T['timing']}: {med['timing']}")
-    st.write(f"{T['type']}: {med['type']}")
+    if med["price"] == 0:
+        st.warning("⚠ No automated medicine available. Please consult a doctor.")
+        st.session_state.billing = {"units":0,"cost":0}
+        st.button(T["proceed"], on_click=next_page)
+    else:
+        st.write(f"{T['medicine']}: {med['name']}")
+        st.write(f"{T['dose']}: {med['dose']}")
+        st.write(f"{T['timing']}: {med['timing']}")
+        st.write(f"{T['type']}: {med['type']}")
 
-    days = st.number_input(T["days"],1,5,1)
+        days = st.number_input(T["days"],1,5,1)
+        units = med["freq"] * days
+        cost = round(units * med["price"] * 1.10,2)
 
-    units = med["freq"] * days
-    cost = round(units * med["price"] * 1.10,2)
+        st.session_state.billing = {"units":units,"cost":cost}
 
-    st.session_state.billing = {"units":units,"cost":cost}
+        st.write(f"{T['total']}: ₹{cost}")
+        st.button(T["proceed"], on_click=next_page)
 
-    st.write(f"{T['total']}: ₹{cost}")
-    st.button(T["proceed"], on_click=next_page)
-
-# PAGE 7 (PAYMENT + DISPENSE)
 elif st.session_state.page == 6:
     bill = st.session_state.billing
-
     st.write(f"{T['amount']}: ₹{bill['cost']}")
     st.code(f"upi://pay?pa=healthai@upi&am={bill['cost']}")
 
     if st.button(T["pay_done"]):
         if not st.session_state.dispensed:
 
-            result = st.session_state.result
-            servo_id = get_servo_id(result["prediction"])
+            disease = st.session_state.result["prediction"]
 
-            if HARDWARE_ENABLED and servo_id != 0:
-                dispense_medicine(servo_id)
+            if HARDWARE_ENABLED:
+                dispense_medicine(disease)
             else:
-                st.warning("Simulation / Phantom mode")
+                st.warning("Simulation mode")
 
             insert_record({
                 "name":st.session_state.data.get("name",""),
                 "age":st.session_state.data.get("age",0),
                 "dob":str(st.session_state.data.get("dob","")),
                 "symptoms":st.session_state.data.get("symptoms",{}),
-                "disease":result["prediction"],
-                "confidence":result["confidence"],
-                "medicine":medications[result["prediction"]]["name"],
+                "disease":disease,
+                "confidence":st.session_state.result["confidence"],
+                "medicine":medications[disease]["name"],
                 "units":bill["units"],
                 "cost":bill["cost"]
             })
@@ -299,7 +273,6 @@ elif st.session_state.page == 6:
             st.session_state.dispensed = True
             next_page()
 
-# PAGE 8
 elif st.session_state.page == 7:
     st.success(T["success"])
     st.write(T["thanks"])
