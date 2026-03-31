@@ -1,9 +1,9 @@
 import requests
 
 # -------------------------------
-# CHANGE THIS → YOUR NGROK URL
+# NGROK SERVER URL (FIXED)
 # -------------------------------
-SERVER_URL = " https://madelynn-polyprotic-feasibly.ngrok-free.dev"
+SERVER_URL = "https://madelynn-polyprotic-feasibly.ngrok-free.dev/dispense"
 
 # -------------------------------
 # DISEASE → MOTOR MAP (4 REAL + PHANTOM)
@@ -34,19 +34,19 @@ disease_to_command = {
 # -------------------------------
 # DISPENSE FUNCTION (API BASED)
 # -------------------------------
-import requests
-
 def dispense_medicine(disease_name):
     command = disease_to_command.get(disease_name)
 
     if not command:
-        print("No mapping")
+        print("No mapping / No hardware action")
         return
 
     try:
-        url = f"{SERVER_URL}/{command}"
+        url = f"{SERVER_URL}/{command}"   # FINAL CORRECT URL
         response = requests.post(url)
+
         print(f"Sent to server: {url}")
-        print(response.text)
+        print(f"Response: {response.status_code} - {response.text}")
+
     except Exception as e:
         print(f"Request failed: {e}")
