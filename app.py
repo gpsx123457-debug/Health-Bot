@@ -254,9 +254,12 @@ elif st.session_state.page == 6:
             disease = st.session_state.result["prediction"]
 
             if HARDWARE_ENABLED:
-                dispense_medicine(disease)
+                with st.spinner("Dispensing..."):
+                    dispense_medicine(disease)
+                st.success("Command sent to dispenser")
             else:
-                st.warning("Simulation mode")
+                st.warning("Simulation mode (no hardware)")
+    
 
             insert_record({
                 "name":st.session_state.data.get("name",""),

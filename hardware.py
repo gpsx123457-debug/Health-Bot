@@ -1,76 +1,58 @@
-import serial
-import time
-
-ser = None
+import requests
 
 # -------------------------------
-# DISEASE → COMMAND MAP (15)
+# CHANGE THIS → YOUR NGROK URL
+# -------------------------------
+SERVER_URL = "https://your-ngrok-url/dispense"
+
+# -------------------------------
+# DISEASE → MOTOR MAP (4 REAL + PHANTOM)
 # -------------------------------
 disease_to_command = {
+    # REAL MOTORS
     "Flu": "MED1",
     "Viral Infection": "MED2",
     "Common Cold": "MED3",
     "Allergy": "MED4",
-    "Gastritis": "MED5",
-    "Food Poisoning": "MED6",
-    "Migraine": "MED7",
-    "Asthma": "MED8",
-    "Cuts Bruises": "MED9",
-    "Burns Mild": "MED10",
-    "Burns Severe": "MED11",
-    "Skin Infection": "MED12",
 
-    # 👻 PHANTOM (NO REAL MOTOR)
-    "Typhoid": "MED13",
-    "Dengue": "MED14",
-    "Pneumonia": "MED15"
+    # 👻 PHANTOM (mapped but NOT physically present)
+    "Gastritis": "MED1",
+    "Food Poisoning": "MED2",
+    "Migraine": "MED3",
+    "Asthma": "MED4",
+    "Cuts Bruises": "MED1",
+    "Burns Mild": "MED2",
+    "Burns Severe": "MED3",
+    "Skin Infection": "MED4",
+
+    # NO DISPENSE
+    "Typhoid": None,
+    "Dengue": None,
+    "Pneumonia": None
 }
 
 # -------------------------------
-# INIT SERIAL (KEEP SAME STYLE)
-# -------------------------------
-def init_serial(port='COM6', baud=115200):
-    global ser
-    if ser is None:
-        try:
-            ser = serial.Serial(port, baud, timeout=1)
-            time.sleep(2)
-            print("Serial connected")
-        except Exception as e:
-            print(f"Serial init failed: {e}")
-            ser = None
-
-# -------------------------------
-# DISPENSE FUNCTION
+# DISPENSE FUNCTION (API BASED)
 # -------------------------------
 def dispense_medicine(disease_name):
-    global ser
 
     if disease_name not in disease_to_command:
-        print("No mapping for disease")
+        print("No mapping")
         return
 
     command = disease_to_command[disease_name]
 
-    # Initialize serial if needed
-    if ser is None:
-        init_serial()
+    if command is None:
+        print("No hardware action required")
+        return
 
-    # -------------------------------
-    # SEND COMMAND (AUGER SYSTEM)
-    # -------------------------------
-    if ser:
-        try:
-            ser.write((command + "\n").encode())
-            print(f"Sent: {command}")
+    try:
+        response = requests.post(f"{SERVER_URL}/{command}")
 
-            # Optional: read response from ESP32
-            time.sleep(0.2)
-            while ser.in_waiting:
-                response = ser.readline().decode().strip()
-                print(f"ESP: {response}")
+        if response.status_code == 200:
+            print(f"✅ Sent: {command}")
+        else:
+            print("❌ Server error")
 
-        except Exception as e:
-            print(f"Serial write failed: {e}")
-    else:
-        print(f"[SIMULATION] {command}")
+    except Exception as e:
+        print(f"❌ Request failed: {e}")
