@@ -249,28 +249,28 @@ elif st.session_state.page == 6:
     st.code(f"upi://pay?pa=healthai@upi&am={bill['cost']}")
 
     if st.button(T["pay_done"]):
+
         if not st.session_state.dispensed:
 
             disease = st.session_state.result["prediction"]
 
             if HARDWARE_ENABLED:
-                with st.spinner("Dispensing..."):
-                    dispense_medicine(disease)
-                st.success("Command sent to dispenser")
+                st.info("Sending command to hardware...")
+                dispense_medicine(disease)
+                st.success("Command sent")
             else:
-                st.warning("Simulation mode (no hardware)")
-    
+                st.warning("Simulation mode only")
 
             insert_record({
-                "name":st.session_state.data.get("name",""),
-                "age":st.session_state.data.get("age",0),
-                "dob":str(st.session_state.data.get("dob","")),
-                "symptoms":st.session_state.data.get("symptoms",{}),
-                "disease":disease,
-                "confidence":st.session_state.result["confidence"],
-                "medicine":medications[disease]["name"],
-                "units":bill["units"],
-                "cost":bill["cost"]
+                "name": st.session_state.data.get("name", ""),
+                "age": st.session_state.data.get("age", 0),
+                "dob": str(st.session_state.data.get("dob", "")),
+                "symptoms": st.session_state.data.get("symptoms", {}),
+                "disease": disease,
+                "confidence": st.session_state.result["confidence"],
+                "medicine": medications[disease]["name"],
+                "units": bill["units"],
+                "cost": bill["cost"]
             })
 
             st.session_state.dispensed = True

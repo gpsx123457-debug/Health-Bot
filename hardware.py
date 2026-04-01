@@ -1,21 +1,19 @@
 import requests
 
 # -------------------------------
-# NGROK SERVER URL (FIXED)
+# NGROK SERVER URL
 # -------------------------------
-SERVER_URL = " https://madelynn-polyprotic-feasibly.ngrok-free.dev"
+SERVER_URL = "https://madelynn-polyprotic-feasibly.ngrok-free.dev"
 
 # -------------------------------
-# DISEASE → MOTOR MAP (4 REAL + PHANTOM)
+# DISEASE → MOTOR MAP
 # -------------------------------
 disease_to_command = {
-    # REAL MOTORS
     "Flu": "MED1",
     "Viral Infection": "MED2",
     "Common Cold": "MED3",
     "Allergy": "MED4",
 
-    # 👻 PHANTOM (mapped but NOT physically present)
     "Gastritis": "MED1",
     "Food Poisoning": "MED2",
     "Migraine": "MED3",
@@ -25,28 +23,30 @@ disease_to_command = {
     "Burns Severe": "MED3",
     "Skin Infection": "MED4",
 
-    # NO DISPENSE
     "Typhoid": None,
     "Dengue": None,
     "Pneumonia": None
 }
 
 # -------------------------------
-# DISPENSE FUNCTION (API BASED)
+# DISPENSE FUNCTION
 # -------------------------------
 def dispense_medicine(disease_name):
     command = disease_to_command.get(disease_name)
 
     if not command:
-        print("No mapping / No hardware action")
+        print("No hardware action required")
         return
 
     try:
-        url = f"{SERVER_URL}/{command}"   # FINAL CORRECT URL
+        url = f"{SERVER_URL}/dispense/{command}"
+
+        print("Sending request:", url)
+
         response = requests.post(url)
 
-        print(f"Sent to server: {url}")
-        print(f"Response: {response.status_code} - {response.text}")
+        print("Status:", response.status_code)
+        print("Response:", response.text)
 
     except Exception as e:
-        print(f"Request failed: {e}")
+        print("Request failed:", e)
