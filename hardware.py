@@ -3,7 +3,7 @@ import requests
 # -------------------------------
 # NGROK SERVER URL (FIXED)
 # -------------------------------
-SERVER_URL = "https://madelynn-polyprotic-feasibly.ngrok-free.dev/dispense"
+SERVER_URL = " https://madelynn-polyprotic-feasibly.ngrok-free.dev"
 
 # -------------------------------
 # DISEASE → MOTOR MAP (4 REAL + PHANTOM)
