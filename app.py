@@ -4,9 +4,9 @@ from database import init_db, insert_record
 import datetime
 import time
 
-# ===============================
+# -------------------------------
 # HARDWARE IMPORT SAFE MODE
-# ===============================
+# -------------------------------
 try:
     from hardware import dispense_medicine
     HARDWARE_AVAILABLE = True
@@ -15,38 +15,16 @@ except:
 
 HARDWARE_ENABLED = HARDWARE_AVAILABLE
 
-# ===============================
-# SERIAL (DIRECT ESP CONTROL FIX)
-# ===============================
-try:
-    import serial
-
-    @st.cache_resource
-    def init_serial():
-        try:
-            esp = serial.Serial("COM5", 115200, timeout=1)
-            time.sleep(2)
-            return esp
-        except:
-            return None
-
-    esp = init_serial()
-    SERIAL_AVAILABLE = esp is not None
-
-except:
-    esp = None
-    SERIAL_AVAILABLE = False
-
 init_db()
 
-# ===============================
+# -------------------------------
 # PAGE CONFIG
-# ===============================
-st.set_page_config(page_title="Health AI", layout="wide")
+# -------------------------------
+st.set_page_config(page_title="Health AI", layout="centered")
 
-# ===============================
+# -------------------------------
 # SESSION STATE
-# ===============================
+# -------------------------------
 if "page" not in st.session_state:
     st.session_state.page = 0
 if "lang" not in st.session_state:
@@ -59,12 +37,10 @@ if "dispensed" not in st.session_state:
     st.session_state.dispensed = False
 if "busy" not in st.session_state:
     st.session_state.busy = False
-if "last_cmd" not in st.session_state:
-    st.session_state.last_cmd = None
 
-# ===============================
+# -------------------------------
 # NAVIGATION
-# ===============================
+# -------------------------------
 def next_page():
     st.session_state.page += 1
 
@@ -73,11 +49,10 @@ def restart():
     st.session_state.data = {}
     st.session_state.billing = {}
     st.session_state.dispensed = False
-    st.session_state.busy = False
 
-# ===============================
-# TRANSLATION SYSTEM (FULL RESTORED)
-# ===============================
+# -------------------------------
+# TRANSLATION SYSTEM
+# -------------------------------
 TEXT = {
     "English": {
         "language": "Language",
@@ -92,6 +67,7 @@ TEXT = {
         "duration": "Duration (days)",
         "result": "Diagnosis Result",
         "confidence": "Confidence",
+        "meds": "Medication Plan",
         "medicine": "Medicine",
         "dose": "Dose",
         "timing": "Timing",
@@ -99,6 +75,8 @@ TEXT = {
         "days": "Days (1-5)",
         "total": "Total Cost",
         "proceed": "Proceed ➡️",
+        "payment": "Payment",
+        "amount": "Amount",
         "pay_done": "Payment Done",
         "success": "Medicine Dispensed Successfully",
         "thanks": "Thank you for using the service",
@@ -115,8 +93,9 @@ TEXT = {
         "symptoms": "लक्षण चुनें",
         "severity": "गंभीरता",
         "duration": "अवधि (दिन)",
-        "result": "निदान परिणाम",
+        "result": "निदान",
         "confidence": "विश्वास",
+        "meds": "दवा योजना",
         "medicine": "दवा",
         "dose": "खुराक",
         "timing": "समय",
@@ -124,6 +103,8 @@ TEXT = {
         "days": "दिन (1-5)",
         "total": "कुल लागत",
         "proceed": "आगे ➡️",
+        "payment": "भुगतान",
+        "amount": "राशि",
         "pay_done": "भुगतान पूर्ण",
         "success": "दवा सफलतापूर्वक दी गई",
         "thanks": "सेवा उपयोग करने के लिए धन्यवाद",
@@ -133,140 +114,138 @@ TEXT = {
 
 T = TEXT[st.session_state.lang]
 
-# ===============================
-# SAFE MOTOR FUNCTION
-# ===============================
-def send_motor(cmd):
-
-    if st.session_state.busy:
-        st.warning("Motor busy...")
-        return
-
-    st.session_state.busy = True
-
-    try:
-        if SERIAL_AVAILABLE:
-            esp.write((cmd + "\n").encode())
-            esp.flush()
-            time.sleep(1.5)
-            st.success(f"Sent: {cmd}")
-
-        elif HARDWARE_ENABLED:
-            dispense_medicine(cmd)
-            st.success(f"Hardware call: {cmd}")
-
-        else:
-            st.warning(f"Simulation: {cmd}")
-
-        st.session_state.last_cmd = cmd
-
-    except Exception as e:
-        st.error(f"Error: {e}")
-
-    st.session_state.busy = False
-
-# ===============================
+# -------------------------------
 # SYMPTOMS
-# ===============================
+# -------------------------------
 symptoms = [
     "Fever","Cough","Headache","Fatigue","Nausea","Vomiting",
-    "Diarrhea","BodyPain","SoreThroat","RunnyNose"
+    "Diarrhea","BodyPain","SoreThroat","RunnyNose","ChestPain",
+    "Breathlessness","Acidity","AbdominalPain","Dizziness",
+    "Allergy","Rash","Chills","Sweating","BurnInjury",
+    "Bleeding","Swelling"
 ]
 
 SYMPTOMS_T = {
     "English": {s: s for s in symptoms},
     "Hindi": {
         "Fever":"बुखार","Cough":"खांसी","Headache":"सिरदर्द","Fatigue":"थकान",
-        "Nausea":"मतली","Vomiting":"उल्टी","Diarrhea":"दस्त",
-        "BodyPain":"शरीर दर्द","SoreThroat":"गले में दर्द","RunnyNose":"नाक बहना"
+        "Nausea":"मतली","Vomiting":"उल्टी","Diarrhea":"दस्त","BodyPain":"शरीर दर्द",
+        "SoreThroat":"गले में दर्द","RunnyNose":"नाक बहना","ChestPain":"छाती दर्द",
+        "Breathlessness":"सांस की तकलीफ","Acidity":"अम्लता","AbdominalPain":"पेट दर्द",
+        "Dizziness":"चक्कर","Allergy":"एलर्जी","Rash":"दाने","Chills":"ठंड लगना",
+        "Sweating":"पसीना","BurnInjury":"जलन","Bleeding":"खून","Swelling":"सूजन"
     }
 }
 
-# ===============================
+# -------------------------------
 # MEDICATION DATABASE
-# ===============================
+# -------------------------------
 medications = {
     "Flu": {"name":"Paracetamol","dose":"500mg","freq":3,"timing":"After food","type":"tablet","price":5},
     "Common Cold": {"name":"Cetirizine","dose":"10mg","freq":1,"timing":"Night","type":"tablet","price":8},
     "Allergy": {"name":"Cetirizine","dose":"10mg","freq":1,"timing":"Night","type":"tablet","price":8},
+    "Gastritis": {"name":"Antacid","dose":"1 tab","freq":2,"timing":"Before food","type":"tablet","price":6},
+    "Food Poisoning": {"name":"ORS","dose":"1 sachet","freq":2,"timing":"After meals","type":"external","price":10},
     "Migraine": {"name":"Ibuprofen","dose":"400mg","freq":2,"timing":"After food","type":"tablet","price":7},
-    "Viral Infection": {"name":"Paracetamol","dose":"500mg","freq":3,"timing":"After food","type":"tablet","price":5}
+    "Asthma": {"name":"Salbutamol","dose":"2 puffs","freq":2,"timing":"Morning & Night","type":"inhaler","price":150},
+    "Cuts Bruises": {"name":"Antiseptic","dose":"Apply","freq":2,"timing":"Morning & Night","type":"cream","price":40},
+    "Burns Mild": {"name":"Burn Cream","dose":"Apply","freq":2,"timing":"Morning & Night","type":"cream","price":50},
+    "Burns Severe": {"name":"Silver Cream","dose":"Apply","freq":2,"timing":"Morning & Night","type":"cream","price":120},
+    "Skin Infection": {"name":"Clotrimazole","dose":"Apply","freq":2,"timing":"Morning & Night","type":"cream","price":60},
+    "Viral Infection": {"name":"Paracetamol","dose":"500mg","freq":3,"timing":"After food","type":"tablet","price":5},
+
+    "Typhoid": {"name":"Doctor Consultation Required","price":0},
+    "Dengue": {"name":"Doctor Consultation Required","price":0},
+    "Pneumonia": {"name":"Doctor Consultation Required","price":0}
 }
 
-# ===============================
-# PAGE 0 - LANGUAGE
-# ===============================
+# -------------------------------
+# DISEASE → MOTOR
+# -------------------------------
+disease_to_motor = {
+    "Flu": "MED1", "Viral Infection": "MED1", "Common Cold": "MED1",
+    "Allergy": "MED2", "Gastritis": "MED2", "Food Poisoning": "MED2",
+    "Migraine": "MED3", "Asthma": "MED3", "Skin Infection": "MED3",
+    "Cuts Bruises": "MED4", "Burns Mild": "MED4", "Burns Severe": "MED4",
+    "Typhoid": None, "Dengue": None, "Pneumonia": None
+}
+
+# -------------------------------
+# MOTOR FUNCTION
+# -------------------------------
+def send_motor(cmd, spins=1):
+    if st.session_state.busy:
+        st.warning("Motor busy")
+        return
+
+    st.session_state.busy = True
+
+    try:
+        for _ in range(spins):
+            if HARDWARE_ENABLED:
+                dispense_medicine(cmd)
+            else:
+                st.write(f"[SIMULATION] {cmd}")
+            time.sleep(1.2)
+
+        st.success(f"{cmd} x{spins}")
+
+    except Exception as e:
+        st.error(e)
+
+    st.session_state.busy = False
+
+# -------------------------------
+# PAGE FLOW
+# -------------------------------
 if st.session_state.page == 0:
-
     st.title(T["language"])
+    st.session_state.lang = st.selectbox(T["select"], ["English","Hindi"])
+    st.button(T["next"], on_click=next_page)
 
-    lang = st.selectbox("Select Language", ["English","Hindi"])
-
-    if st.button("Next"):
-        st.session_state.lang = lang
-        st.session_state.page = 1
-
-# ===============================
-# PAGE 1 - USER DETAILS
-# ===============================
 elif st.session_state.page == 1:
-
     st.title(T["details"])
-
     st.session_state.data["name"] = st.text_input(T["name"])
 
     today = datetime.date.today()
-    dob = st.date_input(T["dob"])
+    dob = st.date_input(T["dob"], min_value=datetime.date(1900,1,1), max_value=today)
 
-    age = today.year - dob.year
-    st.session_state.data["age"] = age
+    if dob:
+        age = today.year - dob.year - ((today.month,today.day) < (dob.month,dob.day))
+        st.session_state.data["age"] = age
+        st.write(f"{T['age']}: {age}")
 
-    st.write(f"{T['age']}: {age}")
+    st.session_state.data["dob"] = dob
+    st.button(T["next"], on_click=next_page)
 
-    if st.button(T["next"]):
-        st.session_state.page = 2
-
-# ===============================
-# PAGE 2 - SYMPTOMS
-# ===============================
 elif st.session_state.page == 2:
-
     st.title(T["symptoms"])
 
     data = {}
-    for s in symptoms:
-        data[s] = st.checkbox(SYMPTOMS_T[st.session_state.lang][s])
+    for sym in symptoms:
+        data[sym] = st.checkbox(SYMPTOMS_T[st.session_state.lang][sym])
 
     st.session_state.data["symptoms"] = data
+    st.button(T["next"], on_click=next_page)
 
-    if st.button(T["next"]):
-        st.session_state.page = 3
-
-# ===============================
-# PAGE 3 - SEVERITY
-# ===============================
 elif st.session_state.page == 3:
-
     severity = st.selectbox(T["severity"], ["Low","Moderate","High"])
-    duration = st.number_input(T["duration"], 1, 30, 1)
+    duration = st.number_input(T["duration"],1,30,1)
 
     st.session_state.data.update({
         "Condition": ["Low","Moderate","High"].index(severity),
-        "Duration": duration
+        "Duration": duration,
+        "AgeGroup": 1
     })
 
-    if st.button(T["next"]):
-        st.session_state.page = 4
+    st.button(T["next"], on_click=next_page)
 
-# ===============================
-# PAGE 4 - PREDICTION
-# ===============================
 elif st.session_state.page == 4:
-
     user_input = {}
     user_input.update(st.session_state.data["symptoms"])
     user_input.update({
         "Duration": st.session_state.data["Duration"],
+        "AgeGroup": 1,
         "Condition": st.session_state.data["Condition"]
     })
 
@@ -276,69 +255,64 @@ elif st.session_state.page == 4:
     st.success(result["prediction"])
     st.progress(result["confidence"]/100)
 
-    if st.button(T["next"]):
-        st.session_state.page = 5
+    st.button(T["next"], on_click=next_page)
 
-# ===============================
-# PAGE 5 - MEDICINE
-# ===============================
 elif st.session_state.page == 5:
-
     disease = st.session_state.result["prediction"]
-    med = medications.get(disease, medications["Viral Infection"])
+    med = medications[disease]
 
-    st.write(med["name"])
-    st.write(med["dose"])
-    st.write(med["timing"])
-    st.write(med["type"])
+    if med["price"] == 0:
+        st.warning("⚠ No automated medicine available. Please consult a doctor.")
+        st.session_state.billing = {"units":0,"cost":0,"days":0}
+        st.button(T["proceed"], on_click=next_page)
+    else:
+        st.write(f"{T['medicine']}: {med['name']}")
+        st.write(f"{T['dose']}: {med['dose']}")
+        st.write(f"{T['timing']}: {med['timing']}")
+        st.write(f"{T['type']}: {med['type']}")
 
-    days = st.number_input(T["days"], 1, 5, 1)
+        days = st.number_input(T["days"],1,5,1)
+        units = med["freq"] * days
+        cost = round(units * med["price"] * 1.10,2)
 
-    units = med["freq"] * days
-    cost = units * med["price"]
+        st.session_state.billing = {"units":units,"cost":cost,"days":days}
 
-    st.session_state.billing = {"units": units, "cost": cost}
+        st.write(f"{T['total']}: ₹{cost}")
+        st.button(T["proceed"], on_click=next_page)
 
-    st.write(f"{T['total']}: ₹{cost}")
-
-    if st.button(T["proceed"]):
-        st.session_state.page = 6
-
-# ===============================
-# PAGE 6 - PAYMENT + DISPENSE
-# ===============================
 elif st.session_state.page == 6:
-
     bill = st.session_state.billing
-
     st.write(f"{T['amount']}: ₹{bill['cost']}")
-    st.code(f"upi://pay?pa=healthai@upi&am={bill['cost']}")
 
     if st.button(T["pay_done"]):
 
         if not st.session_state.dispensed:
 
             disease = st.session_state.result["prediction"]
+            motor_cmd = disease_to_motor.get(disease)
 
-            send_motor(disease)
+            if motor_cmd:
+                spins = max(1, bill["days"])
+                send_motor(motor_cmd, spins)
+            else:
+                st.warning("Doctor consultation required")
 
             insert_record({
                 "name": st.session_state.data.get("name",""),
                 "age": st.session_state.data.get("age",0),
+                "dob": str(st.session_state.data.get("dob","")),
+                "symptoms": st.session_state.data.get("symptoms",{}),
                 "disease": disease,
+                "confidence": st.session_state.result["confidence"],
+                "medicine": medications[disease]["name"],
+                "units": bill["units"],
                 "cost": bill["cost"]
             })
 
             st.session_state.dispensed = True
-            st.session_state.page = 7
+            next_page()
 
-# ===============================
-# PAGE 7 - SUCCESS
-# ===============================
 elif st.session_state.page == 7:
-
     st.success(T["success"])
     st.write(T["thanks"])
-
-    if st.button(T["restart"]):
-        restart()
+    st.button(T["restart"], on_click=restart)
