@@ -293,7 +293,7 @@ elif st.session_state.page == 6:
 
             if motor_cmd:
                 spins = max(1, bill["days"])
-                send_motor(motor_cmd, spins)
+                dispense_medicine(disease)
             else:
                 st.warning("Doctor consultation required")
 

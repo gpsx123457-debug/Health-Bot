@@ -1,7 +1,7 @@
 import requests
 
 # -------------------------------
-# NGROK SERVER URL
+# ESP32 DIRECT IP
 # -------------------------------
 SERVER_URL = "http://172.20.10.3"
 
@@ -10,18 +10,20 @@ SERVER_URL = "http://172.20.10.3"
 # -------------------------------
 disease_to_command = {
     "Flu": "MED1",
-    "Viral Infection": "MED2",
-    "Common Cold": "MED3",
-    "Allergy": "MED4",
+    "Viral Infection": "MED1",
+    "Common Cold": "MED1",
 
-    "Gastritis": "MED1",
+    "Allergy": "MED2",
+    "Gastritis": "MED2",
     "Food Poisoning": "MED2",
+
     "Migraine": "MED3",
-    "Asthma": "MED4",
-    "Cuts Bruises": "MED1",
-    "Burns Mild": "MED2",
-    "Burns Severe": "MED3",
-    "Skin Infection": "MED4",
+    "Asthma": "MED3",
+    "Skin Infection": "MED3",
+
+    "Cuts Bruises": "MED4",
+    "Burns Mild": "MED4",
+    "Burns Severe": "MED4",
 
     "Typhoid": None,
     "Dengue": None,
@@ -38,15 +40,15 @@ def dispense_medicine(disease_name):
         print("No hardware action required")
         return
 
+    url = f"{SERVER_URL}/dispense/{command}"
+
     try:
-        url = f"{SERVER_URL}/dispense/{command}"
+        print("➡ Sending:", url)
 
-        print("Sending request:", url)
-
-        response = requests.post(url)
+        response = requests.get(url, timeout=5)
 
         print("Status:", response.status_code)
         print("Response:", response.text)
 
     except Exception as e:
-        print("Request failed:", e)
+        print("❌ ERROR:", e)
