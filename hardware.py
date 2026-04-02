@@ -3,7 +3,7 @@ import requests
 # -------------------------------
 # NGROK SERVER URL
 # -------------------------------
-SERVER_URL = "http://172.20.10.2:8000""
+SERVER_URL = "https://madelynn-polyprotic-feasibly.ngrok-free.dev"
 
 # -------------------------------
 # DISEASE → MOTOR MAP

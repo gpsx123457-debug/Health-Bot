@@ -50,7 +50,8 @@ def dispense(med: str):
         return {"error": "Serial not connected"}
 
     try:
-        ser.write((med + "\n").encode())
+        ser.write((med + "\r").encode())
+        time.sleep(2)
         print(f"➡ Sent: {med}")
 
         return {"status": f"{med} sent"}
