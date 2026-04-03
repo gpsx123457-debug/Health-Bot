@@ -52,7 +52,12 @@ def restart():
 # -------------------------------
 # MOTOR FUNCTION (UPDATED)
 # -------------------------------
+# -------------------------------
+# MOTOR FUNCTION (FIXED)
+# -------------------------------
 def send_motor(cmd, spins=1):
+
+    # Prevent multiple motors running at same time
     if st.session_state.busy:
         st.warning("Motor busy")
         return
@@ -60,17 +65,26 @@ def send_motor(cmd, spins=1):
     st.session_state.busy = True
 
     try:
-        for _ in range(spins):
-            response = send_motor(cmd)
-            st.write(response)
-            time.sleep(1.2)
+        for i in range(spins):
 
-        st.success(f"{cmd} x{spins}")
+            st.write(f"Dispensing unit {i+1}/{spins}")
+
+            # Send command to Arduino / ESP
+            response = dispatch(cmd, 1)  
+
+
+            if response:
+                st.write(response)
+
+            time.sleep(1.2)  # delay between spins
+
+        st.success("Medicine dispensed successfully")
 
     except Exception as e:
-        st.error(e)
+        st.error(f"Motor error: {e}")
 
-    st.session_state.busy = False
+    finally:
+        st.session_state.busy = False
 # -------------------------------
 # TRANSLATION SYSTEM
 # -------------------------------
