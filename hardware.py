@@ -3,7 +3,7 @@ import requests
 # -------------------------------
 # ESP32 DIRECT IP
 # -------------------------------
-SERVER_URL = "http://172.20.10.3"
+SERVER_URL = "http://10.120.25.76"
 
 # -------------------------------
 # DISEASE → MOTOR MAP
