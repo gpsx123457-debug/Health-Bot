@@ -1,9 +1,5 @@
-import requests
-
-# -------------------------------
-# ESP32 DIRECT IP
-# -------------------------------
-SERVER_URL = "http://10.120.25.76"
+from serial_control import send_command
+import time
 
 # -------------------------------
 # DISEASE → MOTOR MAP
@@ -31,24 +27,21 @@ disease_to_command = {
 }
 
 # -------------------------------
-# DISPENSE FUNCTION
+# DISPENSE FUNCTION (SERIAL)
 # -------------------------------
-def dispense_medicine(disease_name):
+def dispense_medicine(disease_name, spins=1):
     command = disease_to_command.get(disease_name)
 
     if not command:
         print("No hardware action required")
         return
 
-    url = f"{SERVER_URL}/dispense/{command}"
-
     try:
-        print("➡ Sending:", url)
-
-        response = requests.get(url, timeout=5)
-
-        print("Status:", response.status_code)
-        print("Response:", response.text)
+        for _ in range(spins):
+            print(f"➡ Sending: {command}")
+            response = send_command(command)
+            print(response)
+            time.sleep(1.2)
 
     except Exception as e:
         print("❌ ERROR:", e)

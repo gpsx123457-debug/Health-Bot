@@ -1,27 +1,17 @@
 import streamlit as st
 from model import predict
 from database import init_db, insert_record
+from serial_control import send_command  # ✅ NEW
 import datetime
 import time
-import requests  # ✅ NEW
-
-# -------------------------------
-# CLOUD SERVER URL (REPLACE THIS)
-# -------------------------------
-BASE_URL = "https://chess-define-post-bubble.trycloudflare.com/"  # ✅ CHANGE THIS
-
-# -------------------------------
-# HARDWARE IMPORT SAFE MODE
-# -------------------------------
-try:
-    from hardware import dispense_medicine
-    HARDWARE_AVAILABLE = True
-except:
-    HARDWARE_AVAILABLE = False
-
-HARDWARE_ENABLED = HARDWARE_AVAILABLE
 
 init_db()
+
+try:
+    from hardware import dispense_medicine
+    HARDWARE_ENABLED = True
+except:
+    HARDWARE_ENABLED = False
 
 # -------------------------------
 # PAGE CONFIG
@@ -70,14 +60,8 @@ def send_motor(cmd, spins=1):
 
     try:
         for _ in range(spins):
-            url = f"{BASE_URL}/med/{cmd.replace('MED','')}"
-            r = requests.get(url, timeout=5)
-
-            try:
-                st.write(r.json())
-            except:
-                st.write(r.text)
-
+            response = send_command(cmd)
+            st.write(response)
             time.sleep(1.2)
 
         st.success(f"{cmd} x{spins}")
@@ -199,11 +183,11 @@ medications = {
 # DISEASE → MOTOR
 # -------------------------------
 disease_to_motor = {
-    "Flu": "MED1", "Viral Infection": "MED1", "Common Cold": "MED1",
-    "Allergy": "MED2", "Gastritis": "MED2", "Food Poisoning": "MED2",
-    "Migraine": "MED3", "Asthma": "MED3", "Skin Infection": "MED3",
-    "Cuts Bruises": "MED4", "Burns Mild": "MED4", "Burns Severe": "MED4",
-    "Typhoid": None, "Dengue": None, "Pneumonia": None
+    "Flu": "MED1","Viral Infection": "MED1","Common Cold": "MED1",
+    "Allergy": "MED2","Gastritis": "MED2","Food Poisoning": "MED2",
+    "Migraine": "MED3","Asthma": "MED3","Skin Infection": "MED3",
+    "Cuts Bruises": "MED4","Burns Mild": "MED4","Burns Severe": "MED4",
+    "Typhoid": None,"Dengue": None,"Pneumonia": None
 }
 
 # -------------------------------
@@ -261,10 +245,14 @@ elif st.session_state.page == 4:
     })
 
     result = predict(user_input)
-    st.session_state.result = result
 
-    st.success(result["prediction"])
-    st.progress(result["confidence"]/100)
+    if result:
+        st.session_state.result = result
+        st.success(result["prediction"])
+        st.progress(result["confidence"]/100)
+    else:
+        st.error("Prediction failed")
+
 
     st.button(T["next"], on_click=next_page)
 
@@ -302,9 +290,9 @@ elif st.session_state.page == 6:
             disease = st.session_state.result["prediction"]
             motor_cmd = disease_to_motor.get(disease)
 
-            if motor_cmd:
+            if motor_cmd and HARDWARE_ENABLED:
                 spins = max(1, bill["days"])
-                send_motor(motor_cmd, spins)  # ✅ FIXED
+                send_motor(motor_cmd, spins)
             else:
                 st.warning("Doctor consultation required")
 
