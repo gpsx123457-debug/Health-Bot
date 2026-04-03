@@ -1,7 +1,8 @@
 import streamlit as st
 from model import predict
 from database import init_db, insert_record
-from serial_control import send_command  # ✅ NEW
+from serial_control import dispatch
+from hardware import get_motor_command 
 import datetime
 import time
 
@@ -60,7 +61,7 @@ def send_motor(cmd, spins=1):
 
     try:
         for _ in range(spins):
-            response = send_command(cmd)
+            response = send_motor(cmd)
             st.write(response)
             time.sleep(1.2)
 
@@ -283,16 +284,23 @@ elif st.session_state.page == 6:
     bill = st.session_state.billing
     st.write(f"{T['amount']}: ₹{bill['cost']}")
 
-    if st.button(T["pay_done"]):
+    if "payment_lock" not in st.session_state:
+        st.session_state.payment_lock = False
+
+    if st.button(T["pay_done"]) and not st.session_state.payment_lock:
+        st.session_state.payment_lock = True
 
         if not st.session_state.dispensed:
 
             disease = st.session_state.result["prediction"]
-            motor_cmd = disease_to_motor.get(disease)
+            motor_cmd = get_motor_command(disease)
 
-            if motor_cmd and HARDWARE_ENABLED:
+            if motor_cmd:
                 spins = max(1, bill["days"])
-                send_motor(motor_cmd, spins)
+
+                dispatch(motor_cmd, spins)
+
+                st.session_state.dispensed = True
             else:
                 st.warning("Doctor consultation required")
 
@@ -308,8 +316,7 @@ elif st.session_state.page == 6:
                 "cost": bill["cost"]
             })
 
-            st.session_state.dispensed = True
-            next_page()
+            st.session_state.page += 1
 
 elif st.session_state.page == 7:
     st.success(T["success"])
