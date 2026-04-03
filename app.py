@@ -31,6 +31,8 @@ st.set_page_config(page_title="Health AI", layout="centered")
 # -------------------------------
 # SESSION STATE
 # -------------------------------
+if "result" not in st.session_state:
+    st.session_state.result = None
 if "page" not in st.session_state:
     st.session_state.page = 0
 if "lang" not in st.session_state:
@@ -70,7 +72,12 @@ def send_motor(cmd, spins=1):
         for _ in range(spins):
             url = f"{BASE_URL}/med/{cmd.replace('MED','')}"
             r = requests.get(url, timeout=5)
-            st.write(r.json())
+
+            try:
+                st.write(r.json())
+            except:
+                st.write(r.text)
+
             time.sleep(1.2)
 
         st.success(f"{cmd} x{spins}")
@@ -79,8 +86,6 @@ def send_motor(cmd, spins=1):
         st.error(e)
 
     st.session_state.busy = False
-
-
 # -------------------------------
 # TRANSLATION SYSTEM
 # -------------------------------
@@ -200,31 +205,6 @@ disease_to_motor = {
     "Cuts Bruises": "MED4", "Burns Mild": "MED4", "Burns Severe": "MED4",
     "Typhoid": None, "Dengue": None, "Pneumonia": None
 }
-
-# -------------------------------
-# MOTOR FUNCTION
-# -------------------------------
-def send_motor(cmd, spins=1):
-    if st.session_state.busy:
-        st.warning("Motor busy")
-        return
-
-    st.session_state.busy = True
-
-    try:
-        for _ in range(spins):
-            if HARDWARE_ENABLED:
-                dispense_medicine(cmd)
-            else:
-                st.write(f"[SIMULATION] {cmd}")
-            time.sleep(1.2)
-
-        st.success(f"{cmd} x{spins}")
-
-    except Exception as e:
-        st.error(e)
-
-    st.session_state.busy = False
 
 # -------------------------------
 # PAGE FLOW
