@@ -3,7 +3,7 @@ import requests
 
 app = FastAPI()
 
-ESP32_IP = "http://172.20.10.3"  # your ESP IP
+ESP32_IP = "http://10.120.25.76"  # your ESP IP
 
 @app.get("/med/{id}")
 def dispense(id: str):
