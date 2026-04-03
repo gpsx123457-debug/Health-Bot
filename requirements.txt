@@ -6,3 +6,5 @@ joblib
 gdown
 pyserial
 requests
+fastapi
+uvicorn

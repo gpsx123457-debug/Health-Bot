@@ -3,6 +3,12 @@ from model import predict
 from database import init_db, insert_record
 import datetime
 import time
+import requests  # ✅ NEW
+
+# -------------------------------
+# CLOUD SERVER URL (REPLACE THIS)
+# -------------------------------
+BASE_URL = "https://your-url.trycloudflare.com"  # ✅ CHANGE THIS
 
 # -------------------------------
 # HARDWARE IMPORT SAFE MODE
@@ -49,6 +55,31 @@ def restart():
     st.session_state.data = {}
     st.session_state.billing = {}
     st.session_state.dispensed = False
+
+# -------------------------------
+# MOTOR FUNCTION (UPDATED)
+# -------------------------------
+def send_motor(cmd, spins=1):
+    if st.session_state.busy:
+        st.warning("Motor busy")
+        return
+
+    st.session_state.busy = True
+
+    try:
+        for _ in range(spins):
+            url = f"{BASE_URL}/med/{cmd.replace('MED','')}"
+            r = requests.get(url, timeout=5)
+            st.write(r.json())
+            time.sleep(1.2)
+
+        st.success(f"{cmd} x{spins}")
+
+    except Exception as e:
+        st.error(e)
+
+    st.session_state.busy = False
+
 
 # -------------------------------
 # TRANSLATION SYSTEM
@@ -293,7 +324,7 @@ elif st.session_state.page == 6:
 
             if motor_cmd:
                 spins = max(1, bill["days"])
-                dispense_medicine(disease)
+                send_motor(motor_cmd, spins)  # ✅ FIXED
             else:
                 st.warning("Doctor consultation required")
 
