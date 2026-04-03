@@ -8,7 +8,7 @@ import requests  # ✅ NEW
 # -------------------------------
 # CLOUD SERVER URL (REPLACE THIS)
 # -------------------------------
-BASE_URL = "https://your-url.trycloudflare.com"  # ✅ CHANGE THIS
+BASE_URL = "https://chess-define-post-bubble.trycloudflare.com/"  # ✅ CHANGE THIS
 
 # -------------------------------
 # HARDWARE IMPORT SAFE MODE
